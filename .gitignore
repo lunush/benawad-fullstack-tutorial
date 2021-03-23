@@ -1,3 +1,6 @@
+# postgres
+/postgres
+
 # dependencies
 /**/node_modules
 /**/.pnp
