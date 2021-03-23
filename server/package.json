@@ -2,15 +2,20 @@
   "name": "server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "watch": "tsc -w",
+    "build": "tsc",
+    "start": "nodemon dist/index.js",
+    "dev": "concurrently \"npm run watch\" \"npm run start\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^14.14.35",
+    "concurrently": "^6.0.0",
+    "nodemon": "^2.0.7",
     "typescript": "^4.2.3"
   }
 }
