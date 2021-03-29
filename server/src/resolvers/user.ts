@@ -55,6 +55,12 @@ export class UserResolver {
     @Ctx() { em }: MyContext
   ): Promise<UserResponse> {
     const { username, password, confirmPassword } = options;
+
+    if (username.length < 2)
+      return {
+        errors: [{ message: "Username cannot be less than 2 characters" }],
+      };
+
     if (password !== confirmPassword)
       return { errors: [{ message: "Passwords do not match" }] };
 
@@ -70,6 +76,12 @@ export class UserResolver {
     @Ctx() { em }: MyContext
   ): Promise<UserResponse> {
     const { username, password } = options;
+
+    if (username.length < 2)
+      return {
+        errors: [{ message: "Username cannot be less than 2 characters" }],
+      };
+
     const user = await em.findOne(User, { username });
     if (!user) return { errors: [{ message: "Invalid username or password" }] };
 
