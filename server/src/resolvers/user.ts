@@ -61,6 +61,11 @@ export class UserResolver {
         errors: [{ message: "Username cannot be less than 2 characters" }],
       };
 
+    if (password.length < 2)
+      return {
+        errors: [{ message: "Password cannot be less than 2 characters" }],
+      };
+
     if (password !== confirmPassword)
       return { errors: [{ message: "Passwords do not match" }] };
 
@@ -80,6 +85,11 @@ export class UserResolver {
     if (username.length < 2)
       return {
         errors: [{ message: "Username cannot be less than 2 characters" }],
+      };
+
+    if (password.length < 2)
+      return {
+        errors: [{ message: "Password cannot be less than 2 characters" }],
       };
 
     const user = await em.findOne(User, { username });
