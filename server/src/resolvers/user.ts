@@ -1,5 +1,4 @@
 import argon2 from "argon2";
-import { User } from "../entities/User";
 import { MyContext } from "src/types";
 import {
   Arg,
@@ -8,53 +7,67 @@ import {
   InputType,
   Mutation,
   ObjectType,
+  Query,
   Resolver,
 } from "type-graphql";
 
+import { User } from "../entities/User";
+
 @InputType()
 class RegistrationInput {
-  @Field()
-  username: string;
+  @Field() username: string;
 
-  @Field()
-  password: string;
+  @Field() password: string;
 
-  @Field()
-  confirmPassword: string;
+  @Field() confirmPassword: string;
 }
 
 @InputType()
 class LoginInput {
-  @Field()
-  username: string;
+  @Field() username: string;
 
-  @Field()
-  password: string;
+  @Field() password: string;
 }
 
 @ObjectType()
 class FieldError {
-  @Field()
-  message: string;
+  @Field() message: string;
 }
 
 @ObjectType()
 class UserResponse {
-  @Field(() => [FieldError], { nullable: true })
-  errors?: FieldError[];
+  @Field(() => [FieldError], { nullable: true }) errors?: FieldError[];
 
-  @Field(() => User, { nullable: true })
-  user?: User;
+  @Field(() => User, { nullable: true }) user?: User;
 }
 
 @Resolver()
 export class UserResolver {
+  @Query(() => UserResponse)
+  async me(@Ctx() { em, req }: MyContext): Promise<UserResponse> {
+    if (!req.session.userId)
+      return {
+        errors: [{ message: "You are not logged in" }],
+      };
+
+    const user = await em.findOne(User, { id: req.session.userId });
+
+    if (!user) return { errors: [{ message: "Corrupted session" }] };
+
+    return { user };
+  }
+
   @Mutation(() => UserResponse)
   async register(
     @Arg("options") options: RegistrationInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     const { username, password, confirmPassword } = options;
+
+    if (req.session.userId)
+      return {
+        errors: [{ message: "You are already logged in" }],
+      };
 
     if (username.length < 2)
       return {
@@ -85,9 +98,14 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async login(
     @Arg("options") options: LoginInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     const { username, password } = options;
+
+    if (req.session.userId)
+      return {
+        errors: [{ message: "You are already logged in" }],
+      };
 
     if (username.length < 2)
       return {
@@ -104,7 +122,9 @@ export class UserResolver {
 
     const isPasswordCorrect = await argon2.verify(user.password, password);
 
-    if (isPasswordCorrect) return { user };
-    else return { errors: [{ message: "Invalid username or password" }] };
+    if (isPasswordCorrect) {
+      req.session.userId = user.id;
+      return { user };
+    } else return { errors: [{ message: "Invalid username or password" }] };
   }
 }
