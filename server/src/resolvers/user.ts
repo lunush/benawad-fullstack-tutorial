@@ -71,7 +71,14 @@ export class UserResolver {
 
     const hashedPassword = await argon2.hash(password);
     const user = em.create(User, { username, password: hashedPassword });
-    await em.persistAndFlush(user);
+    try {
+      await em.persistAndFlush(user);
+    } catch (error) {
+      // Duplicate username error
+      if (error.code === "23505" || error.detail.includes("already exists")) {
+        return { errors: [{ message: "User already exists" }] };
+      }
+    }
     return { user };
   }
 
