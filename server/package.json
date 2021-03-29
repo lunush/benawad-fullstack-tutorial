@@ -7,7 +7,8 @@
     "watch": "tsc -w",
     "build": "tsc",
     "start": "nodemon dist/index.js",
-    "dev": "concurrently \"npm run watch\" \"npm run start\""
+    "dev": "concurrently \"npm run watch\" \"npm run start\"",
+    "migration:create": "mikro-orm migration:create"
   },
   "keywords": [],
   "author": "",
@@ -33,9 +34,6 @@
   },
   "mikro-orm": {
     "useTsNode": true,
-    "configPaths": [
-      "./src/mikro-orm.config.ts",
-      "./dist/mikro-orm.config.js"
-    ]
+    "configPaths": ["./src/mikro-orm.config.ts", "./dist/mikro-orm.config.js"]
   }
 }

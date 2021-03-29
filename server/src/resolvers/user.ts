@@ -1,0 +1,81 @@
+import argon2 from "argon2";
+import { User } from "../entities/User";
+import { MyContext } from "src/types";
+import {
+  Arg,
+  Ctx,
+  Field,
+  InputType,
+  Mutation,
+  ObjectType,
+  Resolver,
+} from "type-graphql";
+
+@InputType()
+class RegistrationInput {
+  @Field()
+  username: string;
+
+  @Field()
+  password: string;
+
+  @Field()
+  confirmPassword: string;
+}
+
+@InputType()
+class LoginInput {
+  @Field()
+  username: string;
+
+  @Field()
+  password: string;
+}
+
+@ObjectType()
+class FieldError {
+  @Field()
+  message: string;
+}
+
+@ObjectType()
+class UserResponse {
+  @Field(() => [FieldError], { nullable: true })
+  errors?: FieldError[];
+
+  @Field(() => User, { nullable: true })
+  user?: User;
+}
+
+@Resolver()
+export class UserResolver {
+  @Mutation(() => UserResponse)
+  async register(
+    @Arg("options") options: RegistrationInput,
+    @Ctx() { em }: MyContext
+  ): Promise<UserResponse> {
+    const { username, password, confirmPassword } = options;
+    if (password !== confirmPassword)
+      return { errors: [{ message: "Passwords do not match" }] };
+
+    const hashedPassword = await argon2.hash(password);
+    const user = em.create(User, { username, password: hashedPassword });
+    await em.persistAndFlush(user);
+    return { user };
+  }
+
+  @Mutation(() => UserResponse)
+  async login(
+    @Arg("options") options: LoginInput,
+    @Ctx() { em }: MyContext
+  ): Promise<UserResponse> {
+    const { username, password } = options;
+    const user = await em.findOne(User, { username });
+    if (!user) return { errors: [{ message: "Invalid username or password" }] };
+
+    const isPasswordCorrect = await argon2.verify(user.password, password);
+
+    if (isPasswordCorrect) return { user };
+    else return { errors: [{ message: "Invalid username or password" }] };
+  }
+}
