@@ -10,6 +10,7 @@ import session from "express-session";
 import connectRedis from "connect-redis";
 import { PROD } from "./contstants";
 import { MyContext } from "./types";
+import cors from "cors";
 
 const main = async () => {
   const orm = await MikroORM.init(config);
@@ -27,6 +28,13 @@ const main = async () => {
   });
 
   app.use(
+    cors({
+      origin: "http://localhost:3000",
+      credentials: true,
+    })
+  );
+
+  app.use(
     session({
       name: "liredditAuth",
       store: new RedisStore({ client: redisClient, disableTouch: true }),
@@ -42,7 +50,10 @@ const main = async () => {
     })
   );
 
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({
+    app,
+    cors: false,
+  });
 
   app.listen(4000);
 };

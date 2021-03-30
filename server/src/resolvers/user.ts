@@ -16,16 +16,13 @@ import { User } from "../entities/User";
 @InputType()
 class RegistrationInput {
   @Field() username: string;
-
   @Field() password: string;
-
   @Field() confirmPassword: string;
 }
 
 @InputType()
 class LoginInput {
   @Field() username: string;
-
   @Field() password: string;
 }
 
@@ -37,7 +34,6 @@ class FieldError {
 @ObjectType()
 class UserResponse {
   @Field(() => [FieldError], { nullable: true }) errors?: FieldError[];
-
   @Field(() => User, { nullable: true }) user?: User;
 }
 
@@ -86,6 +82,7 @@ export class UserResolver {
     const user = em.create(User, { username, password: hashedPassword });
     try {
       await em.persistAndFlush(user);
+      req.session.userId = user.id;
     } catch (error) {
       // Duplicate username error
       if (error.code === "23505" || error.detail.includes("already exists")) {
