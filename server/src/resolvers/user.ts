@@ -39,18 +39,15 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
-  @Query(() => UserResponse)
-  async me(@Ctx() { em, req }: MyContext): Promise<UserResponse> {
-    if (!req.session.userId)
-      return {
-        errors: [{ message: "You are not logged in" }],
-      };
+  @Query(() => User, { nullable: true })
+  async me(@Ctx() { em, req }: MyContext) {
+    if (!req.session.userId) return null;
 
     const user = await em.findOne(User, { id: req.session.userId });
+    console.log(user);
 
-    if (!user) return { errors: [{ message: "Corrupted session" }] };
-
-    return { user };
+    // if (!user) return { errors: [{ message: "Corrupted session" }] };
+    return user;
   }
 
   @Mutation(() => UserResponse)

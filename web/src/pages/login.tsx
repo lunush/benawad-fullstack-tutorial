@@ -9,14 +9,14 @@ import { useRouter } from "next/router";
 interface Props {}
 
 const login: React.FC<Props> = () => {
-  const [, register] = useLoginMutation();
+  const [, login] = useLoginMutation();
   const router = useRouter();
   return (
     <Wrapper>
       <Formik
-        initialValues={{ username: "", password: "", confirmPassword: "" }}
+        initialValues={{ username: "", password: "" }}
         onSubmit={async (values, { setStatus }) => {
-          const res = await register({ options: values });
+          const res = await login({ options: values });
 
           if (res.data?.login.errors) setStatus(res.data.login.errors[0]);
           else router.push("/");
