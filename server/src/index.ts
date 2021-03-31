@@ -8,7 +8,7 @@ import { UserResolver } from "./resolvers/user";
 import redis from "redis";
 import session from "express-session";
 import connectRedis from "connect-redis";
-import { PROD } from "./contstants";
+import { COOKIE_NAME, PROD } from "./contstants";
 import { MyContext } from "./types";
 import cors from "cors";
 
@@ -36,7 +36,7 @@ const main = async () => {
 
   app.use(
     session({
-      name: "liredditAuth",
+      name: COOKIE_NAME,
       store: new RedisStore({ client: redisClient, disableTouch: true }),
       saveUninitialized: false,
       secret: "4reghfnbdferwrteghdgetwredascsvfHJIYG",

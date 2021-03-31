@@ -1,5 +1,6 @@
 import argon2 from "argon2";
-import { MyContext } from "src/types";
+import { COOKIE_NAME } from "../contstants";
+import { MyContext } from "../types";
 import {
   Arg,
   Ctx,
@@ -120,5 +121,16 @@ export class UserResolver {
       req.session.userId = user.id;
       return { user };
     } else return { errors: [{ message: "Invalid username or password" }] };
+  }
+
+  @Mutation(() => Boolean)
+  async logout(@Ctx() { req, res }: MyContext) {
+    return new Promise((resolve) => {
+      res.clearCookie(COOKIE_NAME);
+      req.session.destroy((err) => {
+        if (err) resolve(false);
+        else resolve(true);
+      });
+    });
   }
 }
