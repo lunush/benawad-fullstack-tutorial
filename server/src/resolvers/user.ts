@@ -5,7 +5,6 @@ import {
   Arg,
   Ctx,
   Field,
-  InputType,
   Mutation,
   ObjectType,
   Query,
@@ -13,19 +12,12 @@ import {
 } from "type-graphql";
 
 import { User } from "../entities/User";
-
-@InputType()
-class RegistrationInput {
-  @Field() username: string;
-  @Field() password: string;
-  @Field() confirmPassword: string;
-}
-
-@InputType()
-class LoginInput {
-  @Field() username: string;
-  @Field() password: string;
-}
+import {
+  validateLoginInput,
+  validateRegistrationInput,
+} from "../utils/validation";
+import { RegistrationInput } from "../utils/RegistrationInput";
+import { LoginInput } from "../utils/LoginInput";
 
 @ObjectType()
 class FieldError {
@@ -45,7 +37,6 @@ export class UserResolver {
     if (!req.session.userId) return null;
 
     const user = await em.findOne(User, { id: req.session.userId });
-    console.log(user);
 
     // if (!user) return { errors: [{ message: "Corrupted session" }] };
     return user;
@@ -56,28 +47,13 @@ export class UserResolver {
     @Arg("options") options: RegistrationInput,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    const { username, password, confirmPassword } = options;
+    const { username, email, password } = options;
 
-    if (req.session.userId)
-      return {
-        errors: [{ message: "You are already logged in" }],
-      };
-
-    if (username.length < 2)
-      return {
-        errors: [{ message: "Username cannot be less than 2 characters" }],
-      };
-
-    if (password.length < 2)
-      return {
-        errors: [{ message: "Password cannot be less than 2 characters" }],
-      };
-
-    if (password !== confirmPassword)
-      return { errors: [{ message: "Passwords do not match" }] };
+    const inputErrors = validateRegistrationInput(options, req);
+    if (inputErrors) return inputErrors;
 
     const hashedPassword = await argon2.hash(password);
-    const user = em.create(User, { username, password: hashedPassword });
+    const user = em.create(User, { username, email, password: hashedPassword });
     try {
       await em.persistAndFlush(user);
       req.session.userId = user.id;
@@ -97,20 +73,8 @@ export class UserResolver {
   ): Promise<UserResponse> {
     const { username, password } = options;
 
-    if (req.session.userId)
-      return {
-        errors: [{ message: "You are already logged in" }],
-      };
-
-    if (username.length < 2)
-      return {
-        errors: [{ message: "Username cannot be less than 2 characters" }],
-      };
-
-    if (password.length < 2)
-      return {
-        errors: [{ message: "Password cannot be less than 2 characters" }],
-      };
+    const inputErrors = validateLoginInput(options, req);
+    if (inputErrors) return inputErrors;
 
     const user = await em.findOne(User, { username });
     if (!user) return { errors: [{ message: "Invalid username or password" }] };

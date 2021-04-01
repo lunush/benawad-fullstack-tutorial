@@ -82,6 +82,7 @@ export type QueryPostArgs = {
 
 export type RegistrationInput = {
   username: Scalars['String'];
+  email?: Maybe<Scalars['String']>;
   password: Scalars['String'];
   confirmPassword: Scalars['String'];
 };
@@ -90,6 +91,7 @@ export type User = {
   __typename?: 'User';
   id: Scalars['Int'];
   username: Scalars['String'];
+  email?: Maybe<Scalars['String']>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
 };

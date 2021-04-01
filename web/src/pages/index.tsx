@@ -7,8 +7,6 @@ import Navbar from "../components/Navbar";
 const Index = () => {
   const [{ data }] = usePostsQuery();
 
-  console.log(data?.posts[0].title);
-
   return (
     <>
       <Navbar />
