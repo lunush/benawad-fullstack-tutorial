@@ -5,6 +5,8 @@ import InputField from "src/components/InputField";
 import { Box, Button } from "@chakra-ui/react";
 import { useRegisterMutation } from "src/generated/graphql";
 import { useRouter } from "next/router";
+import { createUrqlClient } from "src/utils/createUrqlClient";
+import { withUrqlClient } from "next-urql";
 
 interface Props {}
 
@@ -63,4 +65,4 @@ const register: React.FC<Props> = () => {
   );
 };
 
-export default register;
+export default withUrqlClient(createUrqlClient)(register);

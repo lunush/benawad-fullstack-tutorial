@@ -5,6 +5,8 @@ import InputField from "src/components/InputField";
 import { Box, Button } from "@chakra-ui/react";
 import { useLoginMutation } from "src/generated/graphql";
 import { useRouter } from "next/router";
+import { createUrqlClient } from "src/utils/createUrqlClient";
+import { withUrqlClient } from "next-urql";
 
 interface Props {}
 
@@ -58,4 +60,4 @@ const login: React.FC<Props> = () => {
   );
 };
 
-export default login;
+export default withUrqlClient(createUrqlClient)(login);
