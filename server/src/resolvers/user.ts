@@ -1,5 +1,5 @@
 import argon2 from "argon2";
-import { COOKIE_NAME } from "../contstants";
+import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from "../contstants";
 import { MyContext } from "../types";
 import {
   Arg,
@@ -13,11 +13,16 @@ import {
 
 import { User } from "../entities/User";
 import {
+  isLoggedIn,
+  validateChangePasswordInput,
   validateLoginInput,
   validateRegistrationInput,
 } from "../utils/validation";
 import { RegistrationInput } from "../utils/RegistrationInput";
 import { LoginInput } from "../utils/LoginInput";
+import { v4 as uuid } from "uuid";
+import { sendEmail } from "../utils/sendEmail";
+import { ChangePasswordInput } from "../utils/ChangePasswordInput";
 
 @ObjectType()
 class FieldError {
@@ -40,6 +45,70 @@ export class UserResolver {
 
     // if (!user) return { errors: [{ message: "Corrupted session" }] };
     return user;
+  }
+
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg("options") options: ChangePasswordInput,
+    @Ctx() { em, redis, req }: MyContext
+  ): Promise<UserResponse> {
+    const { newPassword, token } = options;
+
+    const inputErrors = validateChangePasswordInput(options, req);
+    if (inputErrors) return inputErrors;
+
+    const userId = await redis.get(FORGET_PASSWORD_PREFIX + token);
+
+    if (!userId)
+      return {
+        errors: [{ message: "Token has expired or is invalid" }],
+      };
+
+    const user = await em.findOne(User, { id: parseInt(userId) });
+
+    if (!user)
+      return {
+        errors: [{ message: "User no longer exists" }],
+      };
+
+    const hashedPassword = await argon2.hash(newPassword);
+
+    user.password = hashedPassword;
+    await em.persistAndFlush(user);
+
+    await redis.del(FORGET_PASSWORD_PREFIX + token);
+
+    return { user };
+  }
+
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg("email") email: string,
+    @Ctx() { em, redis, req }: MyContext
+  ) {
+    if (isLoggedIn(req)) return true;
+
+    const user = await em.findOne(User, { email });
+
+    if (!user) return true;
+
+    const token = uuid();
+
+    const TOKEN_VALID_PERIOD = 1000 * 60 * 10; // 10 minutes
+
+    redis.set(
+      FORGET_PASSWORD_PREFIX + token,
+      user.id,
+      "ex",
+      TOKEN_VALID_PERIOD
+    );
+
+    await sendEmail(
+      email,
+      `<a href="https://localhost:3000/change-password/${token}">Reset Password</a>`
+    );
+
+    return true;
   }
 
   @Mutation(() => UserResponse)

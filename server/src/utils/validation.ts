@@ -2,8 +2,9 @@ import { MyRequest } from "../types";
 import { EMAIL_REGEX } from "../contstants";
 import { LoginInput } from "./LoginInput";
 import { RegistrationInput } from "./RegistrationInput";
+import { ChangePasswordInput } from "./ChangePasswordInput";
 
-const isLoggedIn = (req: MyRequest) => {
+export const isLoggedIn = (req: MyRequest) => {
   if (req.session.userId)
     return {
       errors: [{ message: "You are already logged in" }],
@@ -50,6 +51,9 @@ export const validateRegistrationInput = (
 ) => {
   const { username, email, password, confirmPassword } = options;
 
+  if (password !== confirmPassword)
+    return { errors: [{ message: "Passwords do not match" }] };
+
   const sessionErrors = isLoggedIn(req);
   if (sessionErrors) return sessionErrors;
 
@@ -64,9 +68,6 @@ export const validateRegistrationInput = (
   const passwordErrors = validatePassword(password);
   if (passwordErrors) return passwordErrors;
 
-  if (password !== confirmPassword)
-    return { errors: [{ message: "Passwords do not match" }] };
-
   return null;
 };
 
@@ -80,6 +81,24 @@ export const validateLoginInput = (options: LoginInput, req: MyRequest) => {
   if (usernameErrors) return usernameErrors;
 
   const passwordErrors = validatePassword(password);
+  if (passwordErrors) return passwordErrors;
+
+  return null;
+};
+
+export const validateChangePasswordInput = (
+  options: ChangePasswordInput,
+  req: MyRequest
+) => {
+  const { newPassword, confirmNewPassword } = options;
+
+  const sessionErrors = isLoggedIn(req);
+  if (sessionErrors) return sessionErrors;
+
+  if (newPassword !== confirmNewPassword)
+    return { errors: [{ message: "Passwords do not match" }] };
+
+  const passwordErrors = validatePassword(newPassword);
   if (passwordErrors) return passwordErrors;
 
   return null;
