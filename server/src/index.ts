@@ -1,5 +1,3 @@
-import { MikroORM } from "@mikro-orm/core";
-import config from "./mikro-orm.config";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
@@ -11,10 +9,22 @@ import connectRedis from "connect-redis";
 import { COOKIE_NAME, PROD } from "./contstants";
 import { MyContext } from "./types";
 import cors from "cors";
+import { createConnection } from "typeorm";
+import { User } from "./entities/User";
+import { Post } from "./entities/Post";
 
 const main = async () => {
-  const orm = await MikroORM.init(config);
-  await orm.getMigrator().up();
+  const conn = await createConnection({
+    type: "postgres" as const,
+    database: "lireddit",
+    username: "postgres",
+    password: "postgres",
+    logging: true,
+    synchronize: true,
+    entities: [Post, User],
+  });
+
+  conn && true;
 
   const app = express();
   const RedisStore = connectRedis(session);
@@ -24,7 +34,7 @@ const main = async () => {
     schema: await buildSchema({
       resolvers: [UserResolver, PostResolver],
     }),
-    context: ({ req, res }): MyContext => ({ em: orm.em, req, res, redis }),
+    context: ({ req, res }): MyContext => ({ req, res, redis }),
   });
 
   app.use(

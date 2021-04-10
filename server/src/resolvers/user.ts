@@ -23,6 +23,7 @@ import { LoginInput } from "../utils/LoginInput";
 import { v4 as uuid } from "uuid";
 import { sendEmail } from "../utils/sendEmail";
 import { ChangePasswordInput } from "../utils/ChangePasswordInput";
+import { getConnection } from "typeorm";
 
 @ObjectType()
 class FieldError {
@@ -38,10 +39,10 @@ class UserResponse {
 @Resolver()
 export class UserResolver {
   @Query(() => User, { nullable: true })
-  async me(@Ctx() { em, req }: MyContext) {
+  async me(@Ctx() { req }: MyContext) {
     if (!req.session.userId) return null;
 
-    const user = await em.findOne(User, { id: req.session.userId });
+    const user = await User.findOne(req.session.userId);
 
     // if (!user) return { errors: [{ message: "Corrupted session" }] };
     return user;
@@ -50,7 +51,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async changePassword(
     @Arg("options") options: ChangePasswordInput,
-    @Ctx() { em, redis, req }: MyContext
+    @Ctx() { redis, req }: MyContext
   ): Promise<UserResponse> {
     const { newPassword, token } = options;
 
@@ -64,18 +65,18 @@ export class UserResolver {
         errors: [{ message: "Token has expired or is invalid" }],
       };
 
-    const user = await em.findOne(User, { id: parseInt(userId) });
+    const userIdNum = parseInt(userId);
+    const user = await User.findOne(userIdNum);
 
     if (!user)
       return {
         errors: [{ message: "User no longer exists" }],
       };
 
-    const hashedPassword = await argon2.hash(newPassword);
-
-    user.password = hashedPassword;
-    await em.persistAndFlush(user);
-
+    await User.update(
+      { id: userIdNum },
+      { password: await argon2.hash(newPassword) }
+    );
     await redis.del(FORGET_PASSWORD_PREFIX + token);
 
     return { user };
@@ -84,11 +85,11 @@ export class UserResolver {
   @Mutation(() => Boolean)
   async forgotPassword(
     @Arg("email") email: string,
-    @Ctx() { em, redis, req }: MyContext
+    @Ctx() { redis, req }: MyContext
   ) {
     if (isLoggedIn(req)) return true;
 
-    const user = await em.findOne(User, { email });
+    const user = await User.findOne({ where: { email } });
 
     if (!user) return true;
 
@@ -114,7 +115,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async register(
     @Arg("options") options: RegistrationInput,
-    @Ctx() { em, req }: MyContext
+    @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
     const { username, email, password } = options;
 
@@ -122,9 +123,20 @@ export class UserResolver {
     if (inputErrors) return inputErrors;
 
     const hashedPassword = await argon2.hash(password);
-    const user = em.create(User, { username, email, password: hashedPassword });
+    let user;
     try {
-      await em.persistAndFlush(user);
+      const result = await getConnection()
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values({
+          username,
+          email,
+          password: hashedPassword,
+        })
+        .returning("*")
+        .execute();
+      user = result.raw[0];
       req.session.userId = user.id;
     } catch (error) {
       // Duplicate username error
@@ -138,14 +150,14 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async login(
     @Arg("options") options: LoginInput,
-    @Ctx() { em, req }: MyContext
+    @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
     const { username, password } = options;
 
     const inputErrors = validateLoginInput(options, req);
     if (inputErrors) return inputErrors;
 
-    const user = await em.findOne(User, { username });
+    const user = await User.findOne({ where: { username } });
     if (!user) return { errors: [{ message: "Invalid username or password" }] };
 
     const isPasswordCorrect = await argon2.verify(user.password, password);
