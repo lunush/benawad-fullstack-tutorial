@@ -19,6 +19,7 @@ const main = async () => {
     database: "lireddit",
     username: "postgres",
     password: "postgres",
+    port: 54329,
     logging: true,
     synchronize: true,
     entities: [Post, User],
@@ -28,7 +29,7 @@ const main = async () => {
 
   const app = express();
   const RedisStore = connectRedis(session);
-  const redis = new Redis();
+  const redis = new Redis(63799);
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
