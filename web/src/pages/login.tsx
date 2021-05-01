@@ -22,7 +22,13 @@ const login: React.FC<Props> = () => {
           const res = await login({ options: values });
 
           if (res.data?.login.errors) setStatus(res.data.login.errors[0]);
-          else router.push("/");
+          else {
+            if (typeof router.query.next === "string") {
+              router.push(router.query.next);
+            } else {
+              router.push("/");
+            }
+          }
         }}
       >
         {({ isSubmitting, status }) => (
