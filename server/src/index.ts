@@ -14,7 +14,7 @@ import { User } from "./entities/User";
 import { Post } from "./entities/Post";
 
 const main = async () => {
-  const conn = await createConnection({
+  await createConnection({
     type: "postgres" as const,
     database: "lireddit",
     username: "postgres",
@@ -24,8 +24,6 @@ const main = async () => {
     synchronize: true,
     entities: [Post, User],
   });
-
-  conn && true;
 
   const app = express();
   const RedisStore = connectRedis(session);
