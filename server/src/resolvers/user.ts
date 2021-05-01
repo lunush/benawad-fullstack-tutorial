@@ -1,6 +1,6 @@
 import argon2 from "argon2";
 import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from "../contstants";
-import { MyContext } from "../types";
+import { FieldError, MyContext } from "../types";
 import {
   Arg,
   Ctx,
@@ -24,11 +24,6 @@ import { v4 as uuid } from "uuid";
 import { sendEmail } from "../utils/sendEmail";
 import { ChangePasswordInput } from "../utils/ChangePasswordInput";
 import { getConnection } from "typeorm";
-
-@ObjectType()
-class FieldError {
-  @Field() message: string;
-}
 
 @ObjectType()
 class UserResponse {
@@ -60,18 +55,20 @@ export class UserResolver {
 
     const userId = await redis.get(FORGET_PASSWORD_PREFIX + token);
 
-    if (!userId)
+    if (!userId) {
       return {
         errors: [{ message: "Token has expired or is invalid" }],
       };
+    }
 
     const userIdNum = parseInt(userId);
     const user = await User.findOne(userIdNum);
 
-    if (!user)
+    if (!user) {
       return {
         errors: [{ message: "User no longer exists" }],
       };
+    }
 
     await User.update(
       { id: userIdNum },
