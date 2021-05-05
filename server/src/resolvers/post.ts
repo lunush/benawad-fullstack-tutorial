@@ -3,12 +3,14 @@ import {
   Arg,
   Ctx,
   Field,
+  FieldResolver,
   InputType,
   Int,
   Mutation,
   ObjectType,
   Query,
   Resolver,
+  Root,
   UseMiddleware,
 } from "type-graphql";
 import { FieldError, MyContext } from "../types";
@@ -30,8 +32,13 @@ class PostResponse {
   @Field(() => Post, { nullable: true }) post?: Post;
 }
 
-@Resolver()
+@Resolver(Post)
 export class PostResolver {
+  @FieldResolver(() => String)
+  textSnippet(@Root() root: Post) {
+    return root.text.slice(0, 200);
+  }
+
   @Query(() => [Post])
   posts(
     @Arg("limit", () => Int) limit: number,
