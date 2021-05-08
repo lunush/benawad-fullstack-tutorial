@@ -77,20 +77,6 @@ export class PostResolver {
       replacements
     );
 
-    /* const qb = getConnection()
-      .getRepository(Post)
-      .createQueryBuilder("p")
-      .innerJoinAndSelect("p.creator", "u", 'p."creatorId" = u.id')
-      .orderBy('p."createdAt"', "DESC")
-      .take(realLimitPlusOne);
-
-    if (cursor)
-      qb.where('p."createdAt" < :cursor', {
-        cursor: new Date(parseInt(cursor)),
-      });
-
-    const posts = await qb.getMany(); */
-
     return {
       posts: posts.slice(0, realLimit),
       hasMore: posts.length === realLimitPlusOne,
@@ -132,7 +118,7 @@ export class PostResolver {
     return Post.findOne(id);
   }
 
-  @Mutation(() => Post, { nullable: true })
+  @Mutation(() => Boolean)
   @UseMiddleware(isAuth)
   async deletePost(@Arg("id") id: number): Promise<Boolean> {
     try {
@@ -140,6 +126,35 @@ export class PostResolver {
     } catch {
       return false;
     }
+
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  @UseMiddleware(isAuth)
+  async vote(
+    @Arg("postId", () => Int) postId: number,
+    @Arg("value", () => Int) value: number,
+    @Ctx() { req }: MyContext
+  ) {
+    const isPositive = value > 0;
+    const realValue = isPositive ? 1 : -1;
+    const { userId } = req.session;
+
+    await getConnection().query(
+      `
+        start transaction;
+
+        insert into updoot ("postId", value, "creatorId")
+        values(${postId},${realValue},${userId});
+
+        update post
+        set points = points + ${realValue}
+        where id = ${postId};
+
+        commit;
+      `
+    );
 
     return true;
   }
