@@ -16,8 +16,6 @@ const Index = () => {
     variables,
   });
 
-  console.log(variables, data);
-
   if (!data && !fetching) return <Box>Unable to fetch the data</Box>;
 
   return (
@@ -30,28 +28,32 @@ const Index = () => {
       {!data && fetching ? (
         <Box>Loading...</Box>
       ) : (
-        <Stack spacing={8}>
-          {data!.posts.map((p) => (
-            <Box key={p.id} p={5} borderWidth={1}>
-              <Heading>{p.title}</Heading>
-              <Text isTruncated>{p.textSnippet}</Text>
-            </Box>
-          ))}
-          <Flex>
-            <Button
-              onClick={() => {
-                setVariables({
-                  limit: variables.limit,
-                  cursor: data!.posts[data!.posts.length - 1].createdAt,
-                });
-              }}
-              isLoading={fetching}
-              m="auto"
-            >
-              Load More
-            </Button>
-          </Flex>
-        </Stack>
+        data?.posts?.posts && (
+          <Stack spacing={8}>
+            {data.posts.posts.map((p) => (
+              <Box key={p.id} p={5} borderWidth={1}>
+                <Heading>{p.title}</Heading>
+                <Text isTruncated>{p.textSnippet}</Text>
+              </Box>
+            ))}
+          </Stack>
+        )
+      )}
+      {data && data.posts.hasMore && (
+        <Flex w="full" mt={5}>
+          <Button
+            onClick={() => {
+              setVariables({
+                limit: variables.limit,
+                cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
+              });
+            }}
+            isLoading={fetching}
+            m="auto"
+          >
+            Load More
+          </Button>
+        </Flex>
       )}
     </Layout>
   );
