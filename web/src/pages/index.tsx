@@ -9,7 +9,7 @@ import { useState } from "react";
 
 const Index = () => {
   const [variables, setVariables] = useState({
-    limit: 10,
+    limit: 15,
     cursor: null as string | null,
   });
   const [{ data, fetching }] = usePostsQuery({
@@ -32,7 +32,12 @@ const Index = () => {
           <Stack spacing={8}>
             {data.posts.posts.map((p) => (
               <Box key={p.id} p={5} borderWidth={1}>
-                <Heading>{p.title}</Heading>
+                <Flex>
+                  <Heading>{p.title}</Heading>
+                  <Text fontSize="0.8rem" textColor="gray" ml="auto">
+                    posted by {p.creator.username}
+                  </Text>
+                </Flex>
                 <Text isTruncated>{p.textSnippet}</Text>
               </Box>
             ))}

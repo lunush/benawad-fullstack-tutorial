@@ -39,7 +39,8 @@ export type Mutation = {
   __typename?: 'Mutation';
   createPost: PostResponse;
   updatePost?: Maybe<Post>;
-  deletePost?: Maybe<Post>;
+  deletePost: Scalars['Boolean'];
+  vote: Scalars['Boolean'];
   changePassword: UserResponse;
   forgotPassword: Scalars['Boolean'];
   register: UserResponse;
@@ -61,6 +62,12 @@ export type MutationUpdatePostArgs = {
 
 export type MutationDeletePostArgs = {
   id: Scalars['Float'];
+};
+
+
+export type MutationVoteArgs = {
+  value: Scalars['Int'];
+  postId: Scalars['Int'];
 };
 
 
@@ -96,6 +103,7 @@ export type Post = {
   text: Scalars['String'];
   creatorId: Scalars['Float'];
   points: Scalars['Float'];
+  updoots: Array<Updoot>;
   creator: User;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
@@ -133,12 +141,24 @@ export type RegistrationInput = {
   confirmPassword: Scalars['String'];
 };
 
+export type Updoot = {
+  __typename?: 'Updoot';
+  id: Scalars['Int'];
+  value: Scalars['Float'];
+  creatorId: Scalars['Float'];
+  creator: User;
+  postId: Scalars['Float'];
+  post: Post;
+  createdAt: Scalars['String'];
+};
+
 export type User = {
   __typename?: 'User';
   id: Scalars['Int'];
   username: Scalars['String'];
   email?: Maybe<Scalars['String']>;
   posts: Array<Post>;
+  updoots: Array<Updoot>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
 };
@@ -280,6 +300,10 @@ export type PostsQuery = (
     & { posts: Array<(
       { __typename?: 'Post' }
       & Pick<Post, 'id' | 'title' | 'textSnippet' | 'createdAt' | 'updatedAt'>
+      & { creator: (
+        { __typename?: 'User' }
+        & Pick<User, 'id' | 'username'>
+      ) }
     )> }
   ) }
 );
@@ -408,6 +432,10 @@ export const PostsDocument = gql`
       textSnippet
       createdAt
       updatedAt
+      creator {
+        id
+        username
+      }
     }
     hasMore
   }
