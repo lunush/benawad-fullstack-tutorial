@@ -35,9 +35,12 @@ export class Post extends BaseEntity {
   @Column({ default: 0 })
   points!: number;
 
+  @Field(() => Int, { nullable: true })
+  voteStatus: number | null;
+
   @Field(() => [Updoot])
   @OneToMany(() => Updoot, (updoot) => updoot.post)
-  updoots: Updoot[];
+  updoots!: Updoot[];
 
   @Field(() => User)
   @ManyToOne(() => User, (user) => user.posts)
@@ -45,9 +48,9 @@ export class Post extends BaseEntity {
 
   @Field(() => String)
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Field(() => String)
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

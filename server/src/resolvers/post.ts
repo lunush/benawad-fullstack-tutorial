@@ -16,6 +16,7 @@ import {
 import { FieldError, MyContext } from "../types";
 import { isAuth } from "../middleware/isAuth";
 import { getConnection } from "typeorm";
+import { Updoot } from "../entities/Updoot";
 
 @InputType()
 class InputPost {
@@ -50,13 +51,21 @@ export class PostResolver {
   @Query(() => PaginatedPosts)
   async posts(
     @Arg("limit", () => Int) limit: number,
-    @Arg("cursor", () => String, { nullable: true }) cursor: string | null
+    @Arg("cursor", () => String, { nullable: true }) cursor: string | null,
+    @Ctx() { req }: MyContext
   ): Promise<PaginatedPosts> {
+    const { userId } = req.session;
     const realLimit = Math.min(50, limit);
     const realLimitPlusOne = realLimit + 1;
     const replacements: any[] = [realLimitPlusOne];
 
-    if (cursor) replacements.push(new Date(parseInt(cursor)));
+    if (userId) replacements.push(userId);
+
+    let cursorIdx = 3;
+    if (cursor) {
+      replacements.push(new Date(parseInt(cursor)));
+      cursorIdx = replacements.length;
+    }
 
     const posts = await getConnection().query(
       `
@@ -67,10 +76,15 @@ export class PostResolver {
           'email', u.email,
           'createdAt', u."createdAt",
           'updatedAt', u."updatedAt"
-        ) creator
+        ) creator,
+        ${
+          userId
+            ? '(select value from updoot where "postId" = p.id and "creatorId" = $2) "voteStatus"'
+            : 'null as "voteStatus"'
+        }
         from post p
         inner join public.user u on u.id = p."creatorId"
-        ${cursor ? 'where p."createdAt" < $2' : ""}
+        ${cursor ? `where p."createdAt" < $${cursorIdx}` : ""}
         order by p."createdAt" DESC
         limit $1
                           `,
@@ -137,24 +151,53 @@ export class PostResolver {
     @Arg("value", () => Int) value: number,
     @Ctx() { req }: MyContext
   ) {
+    const { userId } = req.session;
+    const updoot = await Updoot.findOne({
+      where: { postId, creatorId: userId },
+    });
     const isPositive = value > 0;
     const realValue = isPositive ? 1 : -1;
-    const { userId } = req.session;
 
-    await getConnection().query(
-      `
-        start transaction;
+    if (updoot && updoot.value !== realValue) {
+      await getConnection().transaction(async (tm) => {
+        await tm.query(
+          `
+          update updoot
+          set value = $1
+          where "postId" = $2 and "creatorId" = $3
+        `,
+          [realValue, postId, userId]
+        );
 
-        insert into updoot ("postId", value, "creatorId")
-        values(${postId},${realValue},${userId});
+        await tm.query(
+          `
+          update post
+          set points = points + $1
+          where id = $2
+        `,
+          [2 * realValue, postId]
+        );
+      });
+    } else if (!updoot) {
+      await getConnection().transaction(async (tm) => {
+        await tm.query(
+          `
+          insert into updoot ("postId", "creatorId", value)
+          values($1,$2,$3)
+        `,
+          [postId, userId, realValue]
+        );
 
-        update post
-        set points = points + ${realValue}
-        where id = ${postId};
-
-        commit;
-      `
-    );
+        await tm.query(
+          `
+          update post
+          set points = points + $1
+          where id = $2
+        `,
+          [realValue, postId]
+        );
+      });
+    }
 
     return true;
   }

@@ -28,20 +28,20 @@ export class User extends BaseEntity {
 
   @Field(() => [Post])
   @OneToMany(() => Post, (post) => post.creator)
-  posts: Post[];
+  posts!: Post[];
 
   @Field(() => [Updoot])
   @OneToMany(() => Updoot, (updoot) => updoot.creator)
-  updoots: Updoot[];
+  updoots!: Updoot[];
 
   @Column()
   password!: string;
 
   @Field(() => String)
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Field(() => String)
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
