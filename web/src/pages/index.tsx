@@ -46,96 +46,101 @@ const Index = () => {
       ) : (
         data?.posts?.posts && (
           <Stack spacing={8}>
-            {data.posts.posts.map((p) => (
-              <Box key={p.id} p={5} borderWidth={1}>
-                <Flex>
-                  <Flex align="center">
-                    <Flex mr={4} flexDirection="column" align="center">
-                      <IconButton
-                        variant={p.voteStatus === 1 ? "solid" : "outline"}
-                        size="xs"
-                        colorScheme={p.voteStatus === 1 ? "green" : "teal"}
-                        aria-label="Vote Positively"
-                        isLoading={
-                          updootLoading.postId === p.id &&
-                          updootLoading.state === "updoot-loading"
-                        }
-                        onClick={async () => {
-                          if (p.voteStatus === 1) {
-                            return;
+            {data.posts.posts.map((p) =>
+              !p ? null : (
+                <Box key={p.id} p={5} borderWidth={1}>
+                  <Flex>
+                    <Flex align="center">
+                      <Flex mr={4} flexDirection="column" align="center">
+                        <IconButton
+                          variant={p.voteStatus === 1 ? "solid" : "outline"}
+                          size="xs"
+                          colorScheme={p.voteStatus === 1 ? "green" : "teal"}
+                          aria-label="Vote Positively"
+                          isLoading={
+                            updootLoading.postId === p.id &&
+                            updootLoading.state === "updoot-loading"
                           }
-                          setUpdootLoading({
-                            state: "updoot-loading",
-                            postId: p.id,
-                          });
-                          await vote({
-                            value: 1,
-                            postId: p.id,
-                          });
-                          setUpdootLoading({
-                            state: "not-loading",
-                            postId: null,
-                          });
-                        }}
-                        icon={
-                          <ChevronUpIcon fontWeight="bold" fontSize="1.2rem" />
-                        }
-                      />
-                      <Text mt={1.5} fontSize="1.2rem" alignContent="center">
-                        {p.points}
-                      </Text>
-                      <IconButton
-                        variant={p.voteStatus === -1 ? "solid" : "outline"}
-                        size="xs"
-                        colorScheme={p.voteStatus === -1 ? "red" : "teal"}
-                        aria-label="Vote Negatively"
-                        isLoading={
-                          updootLoading.postId === p.id &&
-                          updootLoading.state === "downdoot-loading"
-                        }
-                        onClick={async () => {
-                          if (p.voteStatus === -1) {
-                            return;
+                          onClick={async () => {
+                            if (p.voteStatus === 1) {
+                              return;
+                            }
+                            setUpdootLoading({
+                              state: "updoot-loading",
+                              postId: p.id,
+                            });
+                            await vote({
+                              value: 1,
+                              postId: p.id,
+                            });
+                            setUpdootLoading({
+                              state: "not-loading",
+                              postId: null,
+                            });
+                          }}
+                          icon={
+                            <ChevronUpIcon
+                              fontWeight="bold"
+                              fontSize="1.2rem"
+                            />
                           }
-                          setUpdootLoading({
-                            state: "downdoot-loading",
-                            postId: p.id,
-                          });
-                          await vote({
-                            value: -1,
-                            postId: p.id,
-                          });
-                          setUpdootLoading({
-                            state: "not-loading",
-                            postId: null,
-                          });
-                        }}
-                        icon={
-                          <ChevronDownIcon
-                            fontWeight="bold"
-                            fontSize="1.1rem"
-                          />
-                        }
-                      />
+                        />
+                        <Text mt={1.5} fontSize="1.2rem" alignContent="center">
+                          {p.points}
+                        </Text>
+                        <IconButton
+                          variant={p.voteStatus === -1 ? "solid" : "outline"}
+                          size="xs"
+                          colorScheme={p.voteStatus === -1 ? "red" : "teal"}
+                          aria-label="Vote Negatively"
+                          isLoading={
+                            updootLoading.postId === p.id &&
+                            updootLoading.state === "downdoot-loading"
+                          }
+                          onClick={async () => {
+                            if (p.voteStatus === -1) {
+                              return;
+                            }
+                            setUpdootLoading({
+                              state: "downdoot-loading",
+                              postId: p.id,
+                            });
+                            await vote({
+                              value: -1,
+                              postId: p.id,
+                            });
+                            setUpdootLoading({
+                              state: "not-loading",
+                              postId: null,
+                            });
+                          }}
+                          icon={
+                            <ChevronDownIcon
+                              fontWeight="bold"
+                              fontSize="1.1rem"
+                            />
+                          }
+                        />
+                      </Flex>
+                    </Flex>
+                    {/* if flex and w are not set, text goes out of posts' container */}
+                    <Flex flexDirection="column" flex={1} w="1%">
+                      <Flex>
+                        <NextLink href="/[id]" as={`/${p.id}`}>
+                          <Link>
+                            <Heading>{p.title}</Heading>
+                          </Link>
+                        </NextLink>
+                        <Text fontSize="0.8rem" textColor="gray" ml="auto">
+                          posted by {p.creator.username}
+                        </Text>
+                      </Flex>
+                      <Text isTruncated>{p.textSnippet}</Text>
                     </Flex>
                   </Flex>
-                  {/* if flex and w are not set, text goes out of posts' container */}
-                  <Flex flexDirection="column" flex={1} w="1%">
-                    <Flex>
-                      <NextLink href="/[id]" as={`/${p.id}`}>
-                        <Link>
-                          <Heading>{p.title}</Heading>
-                        </Link>
-                      </NextLink>
-                      <Text fontSize="0.8rem" textColor="gray" ml="auto">
-                        posted by {p.creator.username}
-                      </Text>
-                    </Flex>
-                    <Text isTruncated>{p.textSnippet}</Text>
-                  </Flex>
-                </Flex>
-              </Box>
-            ))}
+                </Box>
+              )
+            )}
           </Stack>
         )
       )}

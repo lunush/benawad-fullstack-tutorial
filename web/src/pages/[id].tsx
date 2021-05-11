@@ -2,7 +2,7 @@ import { Heading, Text, Flex, IconButton } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { withUrqlClient } from "next-urql";
 import { useRouter } from "next/router";
-import { usePostQuery } from "src/generated/graphql";
+import { useDeletePostMutation, usePostQuery } from "src/generated/graphql";
 import { createUrqlClient } from "src/utils/createUrqlClient";
 import Layout from "../components/Layout";
 
@@ -19,6 +19,8 @@ const Id: React.FC<Props> = () => {
     },
   });
 
+  const [, deletePost] = useDeletePostMutation();
+
   if (fetching) {
     return <Layout>Loading...</Layout>;
   }
@@ -34,6 +36,10 @@ const Id: React.FC<Props> = () => {
           {data.post.title}
         </Heading>
         <IconButton
+          onClick={() => {
+            deletePost({ id });
+            router.push("/");
+          }}
           colorScheme="red"
           aria-label="Delete Post"
           icon={<DeleteIcon />}
