@@ -122,7 +122,11 @@ const Index = () => {
                   {/* if flex and w are not set, text goes out of posts' container */}
                   <Flex flexDirection="column" flex={1} w="1%">
                     <Flex>
-                      <Heading>{p.title}</Heading>
+                      <NextLink href="/[id]" as={`/${p.id}`}>
+                        <Link>
+                          <Heading>{p.title}</Heading>
+                        </Link>
+                      </NextLink>
                       <Text fontSize="0.8rem" textColor="gray" ml="auto">
                         posted by {p.creator.username}
                       </Text>
