@@ -14,6 +14,8 @@ import { User } from "./entities/User";
 import { Post } from "./entities/Post";
 import { Updoot } from "./entities/Updoot";
 import path from "path";
+import { createCreatorLoader } from "./utils/createCreatorLoader";
+import { createUpdootLoader } from "./utils/createUpdootLoader";
 
 const main = async () => {
   const conn = await createConnection({
@@ -38,7 +40,13 @@ const main = async () => {
     schema: await buildSchema({
       resolvers: [UserResolver, PostResolver],
     }),
-    context: ({ req, res }): MyContext => ({ req, res, redis }),
+    context: ({ req, res }): MyContext => ({
+      req,
+      res,
+      redis,
+      userLoader: createCreatorLoader(),
+      updootLoader: createUpdootLoader(),
+    }),
   });
 
   app.use(
