@@ -1,4 +1,4 @@
-import { cacheExchange, Resolver } from "@urql/exchange-graphcache";
+import { cacheExchange, Resolver, Cache } from "@urql/exchange-graphcache";
 import Router from "next/router";
 import {
   DeletePostMutationVariables,
@@ -18,6 +18,15 @@ import {
 } from "urql";
 import { pipe, tap } from "wonka";
 import { betterUpdateQuery } from "./betterUpdateQuery";
+
+const invalidateAllPosts = (cache: Cache) => {
+  const allFields = cache.inspectFields("Query");
+  const fieldInfos = allFields.filter((info) => info.fieldName === "posts");
+
+  fieldInfos.forEach((fi) => {
+    cache.invalidate("Query", "posts", fi.arguments || {});
+  });
+};
 
 export const cursorPagination = (): Resolver => {
   return (_parent, fieldArgs, cache, info) => {
@@ -124,14 +133,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
             }
           },
           createPost: (_result, _, cache) => {
-            const allFields = cache.inspectFields("Query");
-            const fieldInfos = allFields.filter(
-              (info) => info.fieldName === "posts"
-            );
-
-            fieldInfos.forEach((fi) => {
-              cache.invalidate("Query", "posts", fi.arguments || {});
-            });
+            invalidateAllPosts(cache);
           },
           logout: (_result, _, cache) => {
             betterUpdateQuery<LogoutMutation, MeQuery>(
@@ -140,6 +142,8 @@ export const createUrqlClient = (ssrExchange: any) => ({
               _result,
               () => ({ me: null })
             );
+
+            invalidateAllPosts(cache);
           },
           login: (_result, _, cache) => {
             betterUpdateQuery<LoginMutation, MeQuery>(
