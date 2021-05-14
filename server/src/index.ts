@@ -23,7 +23,7 @@ const main = async () => {
     type: "postgres" as const,
     url: process.env.POSTGRES_URL,
     logging: true,
-    synchronize: true,
+    // synchronize: true,
     migrations: [path.join(__dirname, "./migrations/*")],
     entities: [Post, User, Updoot],
   });
@@ -46,6 +46,8 @@ const main = async () => {
       updootLoader: createUpdootLoader(),
     }),
   });
+
+  app.set("proxy", 1);
 
   app.use(
     cors({

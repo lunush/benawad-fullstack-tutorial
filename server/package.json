@@ -8,7 +8,8 @@
     "build": "tsc",
     "gen-env-types": "gen-env-types .env -o src/env.d.ts -e .",
     "start": "nodemon dist/index.js",
-    "dev": "concurrently \"npm run watch\" \"npm run start\""
+    "dev": "concurrently \"npm run watch\" \"npm run start\"",
+    "migration:generate": "typeorm migration:generate -n"
   },
   "keywords": [],
   "author": "",
