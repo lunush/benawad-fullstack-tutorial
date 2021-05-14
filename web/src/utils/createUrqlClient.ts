@@ -68,18 +68,20 @@ export const cursorPagination = (): Resolver => {
   };
 };
 
-const errorExchange: Exchange = ({ forward }) => (ops$) => {
-  return pipe(
-    forward(ops$),
-    tap(({ error }) => {
-      if (error?.message.includes("You are not logged in"))
-        Router.push("/login");
-    })
-  );
-};
+const errorExchange: Exchange =
+  ({ forward }) =>
+  (ops$) => {
+    return pipe(
+      forward(ops$),
+      tap(({ error }) => {
+        if (error?.message.includes("You are not logged in"))
+          Router.push("/login");
+      })
+    );
+  };
 
 export const createUrqlClient = (ssrExchange: any) => ({
-  url: "http://localhost:4000/graphql",
+  url: process.env.NEXT_PUBLIC_API_URL as string,
   fetchOptions: {
     credentials: "include" as const,
   },
