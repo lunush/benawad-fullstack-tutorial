@@ -1,15 +1,14 @@
 import { Heading, Text, Flex, IconButton, Link } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon } from "@chakra-ui/icons";
-import { withUrqlClient } from "next-urql";
 import { useRouter } from "next/router";
 import {
   useDeletePostMutation,
   useMeQuery,
   usePostQuery,
 } from "src/generated/graphql";
-import { createUrqlClient } from "src/utils/createUrqlClient";
 import Layout from "../../components/Layout";
 import NextLink from "next/link";
+import { withApollo } from "src/utils/withApollo";
 
 interface Props {}
 
@@ -17,18 +16,18 @@ const Id: React.FC<Props> = () => {
   const router = useRouter();
   const id =
     typeof router.query.id === "string" ? parseInt(router.query.id) : -1;
-  const [{ data, fetching }] = usePostQuery({
-    pause: id === -1,
+  const { data, loading } = usePostQuery({
+    skip: id === -1,
     variables: {
       id,
     },
   });
 
-  const [{ data: meData }] = useMeQuery();
+  const { data: meData } = useMeQuery();
 
-  const [, deletePost] = useDeletePostMutation();
+  const [deletePost] = useDeletePostMutation();
 
-  if (fetching) {
+  if (loading) {
     return <Layout>Loading...</Layout>;
   }
 
@@ -55,7 +54,12 @@ const Id: React.FC<Props> = () => {
             </NextLink>
             <IconButton
               onClick={() => {
-                deletePost({ id });
+                deletePost({
+                  variables: { id },
+                  update: (cache) => {
+                    cache.evict({ id: "Post:" + id });
+                  },
+                });
                 router.push("/");
               }}
               colorScheme="red"
@@ -70,4 +74,4 @@ const Id: React.FC<Props> = () => {
   );
 };
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(Id);
+export default withApollo({ ssr: true })(Id);

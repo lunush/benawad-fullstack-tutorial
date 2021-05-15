@@ -8,29 +8,69 @@ import {
   IconButton,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
-import { withUrqlClient } from "next-urql";
-import { usePostsQuery, useVoteMutation } from "src/generated/graphql";
-import { createUrqlClient } from "src/utils/createUrqlClient";
+import {
+  usePostsQuery,
+  useVoteMutation,
+  VoteMutation,
+} from "src/generated/graphql";
 import Layout from "../components/Layout";
 import { Link } from "@chakra-ui/react";
 import NextLink from "next/link";
 import { useState } from "react";
+import { withApollo } from "src/utils/withApollo";
+import { ApolloCache, gql } from "@apollo/client";
 
-const Index = () => {
-  const [variables, setVariables] = useState({
-    limit: 15,
-    cursor: null as string | null,
+const updateAfterVote = (
+  value: number,
+  postId: number,
+  cache: ApolloCache<VoteMutation>
+) => {
+  const data = cache.readFragment<{
+    id: number;
+    points: number;
+    voteStatus: number | null;
+  }>({
+    id: "Post:" + postId,
+    fragment: gql`
+      fragment _vote on Post {
+        id
+        points
+        voteStatus
+      }
+    `,
   });
 
-  const [{ data, fetching: fetchingPosts }] = usePostsQuery({
-    variables,
+  if (data) {
+    if (data.voteStatus === value) return;
+    const newPoints = data.points + (!data.voteStatus ? 1 : 2) * value;
+
+    cache.writeFragment({
+      id: "Post:" + postId,
+      fragment: gql`
+        fragment __vote on Post {
+          points
+          voteStatus
+        }
+      `,
+      data: { points: newPoints, voteStatus: value },
+    });
+  }
+};
+
+const Index = () => {
+  const { data, loading, fetchMore, variables } = usePostsQuery({
+    variables: {
+      limit: 2,
+      cursor: null,
+    },
+    notifyOnNetworkStatusChange: true,
   });
   const [updootLoading, setUpdootLoading] = useState<{
     state: "updoot-loading" | "downdoot-loading" | "not-loading";
     postId: number | null;
   }>({ state: "not-loading", postId: null });
 
-  const [, vote] = useVoteMutation();
+  const [vote] = useVoteMutation();
 
   return (
     <Layout>
@@ -39,9 +79,9 @@ const Index = () => {
           <Link color="teal">Create Post</Link>
         </NextLink>
       </Flex>
-      {!data && !fetchingPosts ? (
+      {!data && !loading ? (
         <Box>Unable to fetch the data</Box>
-      ) : !data && fetchingPosts ? (
+      ) : !data && loading ? (
         <Box>Loading...</Box>
       ) : (
         data?.posts?.posts && (
@@ -70,8 +110,12 @@ const Index = () => {
                               postId: p.id,
                             });
                             await vote({
-                              value: 1,
-                              postId: p.id,
+                              variables: {
+                                value: 1,
+                                postId: p.id,
+                              },
+                              update: (cache) =>
+                                updateAfterVote(1, p.id, cache),
                             });
                             setUpdootLoading({
                               state: "not-loading",
@@ -106,8 +150,12 @@ const Index = () => {
                               postId: p.id,
                             });
                             await vote({
-                              value: -1,
-                              postId: p.id,
+                              variables: {
+                                value: -1,
+                                postId: p.id,
+                              },
+                              update: (cache) =>
+                                updateAfterVote(-1, p.id, cache),
                             });
                             setUpdootLoading({
                               state: "not-loading",
@@ -148,12 +196,15 @@ const Index = () => {
         <Flex w="full" mt={5}>
           <Button
             onClick={() => {
-              setVariables({
-                limit: variables.limit,
-                cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
+              fetchMore({
+                variables: {
+                  limit: variables?.limit,
+                  cursor:
+                    data.posts.posts[data.posts.posts.length - 1].createdAt,
+                },
               });
             }}
-            isLoading={fetchingPosts}
+            isLoading={loading}
             m="auto"
           >
             Load More
@@ -164,4 +215,4 @@ const Index = () => {
   );
 };
 
-export default withUrqlClient(createUrqlClient)(Index);
+export default withApollo({ ssr: true })(Index);

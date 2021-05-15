@@ -3,15 +3,18 @@ import { Form, Formik } from "formik";
 import Wrapper from "src/components/Wrapper";
 import InputField from "src/components/InputField";
 import { Box, Button } from "@chakra-ui/react";
-import { useRegisterMutation } from "src/generated/graphql";
+import {
+  MeDocument,
+  MeQuery,
+  useRegisterMutation,
+} from "src/generated/graphql";
 import { useRouter } from "next/router";
-import { createUrqlClient } from "src/utils/createUrqlClient";
-import { withUrqlClient } from "next-urql";
+import { withApollo } from "src/utils/withApollo";
 
 interface Props {}
 
 const register: React.FC<Props> = () => {
-  const [, register] = useRegisterMutation();
+  const [register] = useRegisterMutation();
   const router = useRouter();
   return (
     <Wrapper>
@@ -23,7 +26,18 @@ const register: React.FC<Props> = () => {
           confirmPassword: "",
         }}
         onSubmit={async (values, { setStatus }) => {
-          const res = await register({ options: values });
+          const res = await register({
+            variables: { options: values },
+            update: (cache, { data }) => {
+              cache.writeQuery<MeQuery>({
+                query: MeDocument,
+                data: {
+                  __typename: "Query",
+                  me: data?.register.user,
+                },
+              });
+            },
+          });
 
           if (res.data?.register.errors) setStatus(res.data.register.errors[0]);
           else router.push("/");
@@ -71,4 +85,4 @@ const register: React.FC<Props> = () => {
   );
 };
 
-export default withUrqlClient(createUrqlClient)(register);
+export default withApollo({ ssr: false })(register);

@@ -5,18 +5,19 @@ import Wrapper from "../../components/Wrapper";
 import InputField from "../../components/InputField";
 import { useChangePasswordMutation } from "src/generated/graphql";
 import { useRouter } from "next/router";
-import { createUrqlClient } from "src/utils/createUrqlClient";
-import { withUrqlClient } from "next-urql";
+import { withApollo } from "src/utils/withApollo";
 
 const ChangePassword: NextPage<{ token: string }> = ({ token }) => {
   const router = useRouter();
-  const [, changePassword] = useChangePasswordMutation();
+  const [changePassword] = useChangePasswordMutation();
   return (
     <Wrapper>
       <Formik
         initialValues={{ newPassword: "", confirmNewPassword: "" }}
         onSubmit={async (values, { setStatus }) => {
-          const res = await changePassword({ options: { ...values, token } });
+          const res = await changePassword({
+            variables: { options: { ...values, token } },
+          });
 
           if (res.data?.changePassword.errors)
             setStatus(res.data.changePassword.errors[0]);
@@ -73,4 +74,4 @@ ChangePassword.getInitialProps = ({ query }) => {
   };
 };
 
-export default withUrqlClient(createUrqlClient)(ChangePassword as React.FC);
+export default withApollo({ ssr: true })(ChangePassword as React.FC);
