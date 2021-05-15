@@ -54,17 +54,19 @@ export class PostResolver {
     return userLoader.load(post.creatorId);
   }
 
-  @FieldResolver(() => User)
+  @FieldResolver(() => Int, { nullable: true })
   async voteStatus(
     @Root() post: Post,
     @Ctx() { updootLoader, req }: MyContext
-  ) {
+  ): Promise<number | null> {
     const { userId } = req.session;
     if (!userId) return null;
+
     const updoot = await updootLoader.load({
       postId: post.id,
       creatorId: userId,
     });
+
     return updoot ? updoot.value : null;
   }
 
@@ -165,9 +167,11 @@ export class PostResolver {
     @Ctx() { req }: MyContext
   ) {
     const { userId } = req.session;
+
     const updoot = await Updoot.findOne({
       where: { postId, creatorId: userId },
     });
+
     const isPositive = value > 0;
     const realValue = isPositive ? 1 : -1;
 

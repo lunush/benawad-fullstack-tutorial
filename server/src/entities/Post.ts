@@ -31,12 +31,12 @@ export class Post extends BaseEntity {
   @Column()
   creatorId!: number;
 
+  @Field(() => Int, { nullable: true })
+  voteStatus: number;
+
   @Field()
   @Column({ default: 0 })
   points!: number;
-
-  @Field(() => Int, { nullable: true })
-  voteStatus: number | null;
 
   @Field(() => [Updoot])
   @OneToMany(() => Updoot, (updoot) => updoot.post)

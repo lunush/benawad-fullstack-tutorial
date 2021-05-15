@@ -1,7 +1,7 @@
 import {MigrationInterface, QueryRunner} from "typeorm";
 
-export class Intial1620989448355 implements MigrationInterface {
-    name = 'Intial1620989448355'
+export class Initial1621059625403 implements MigrationInterface {
+    name = 'Initial1621059625403'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "updoot" ("id" SERIAL NOT NULL, "value" integer NOT NULL, "creatorId" integer NOT NULL, "postId" integer NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_cdf200006ce75729285f68f0185" PRIMARY KEY ("id", "creatorId", "postId"))`);
